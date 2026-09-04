@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>离线收发包 — Transfer Hub</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <div class="auth-wrap" style="min-height:auto;padding-top:40px;">
+    <div class="auth-card" style="max-width:560px;">
+      <h1>📥 离线收发包</h1>
+      <p class="sub">完整传输内核（RaptorQR 标准二维码 + Cimbar 彩色码，发送与接收均包含）。纯本地运行，无需连接本服务器；扫描设备的摄像头接收请使用此离线包。</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">
+        <a class="btn" href="/receiver/download" style="text-align:center;">⬇ 下载 TransferHub-offline.zip</a>
+      </div>
+      <p style="font-size:12px;color:#6e7681;line-height:1.8;">
+        使用方式：解压后 Windows 双击 <b>open-transfer-hub.bat</b>（系统自带 PowerShell 启动，随机端口）；
+        macOS / Linux 运行 <b>bash open-transfer-hub.sh</b>。浏览器会自动打开本机页面。<br />
+        注意：浏览器仅允许在 <b>HTTPS 或 localhost</b> 使用摄像头，因此跨设备的摄像头接收请用离线包在本机打开，
+        或经 HTTPS 访问本服务器。<br />
+        该包与服务器内置的传输内核为同一构建（字节一致），协议互通。
+      </p>
+      <div class="link-line"><a href="/app">&#8592; 返回工作台</a></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,5 @@
+webapp/** -text
+webapp/dist/** -text
+webapp/transfer-hub-offline.zip binary
+*.wasm binary
+*.zip binary

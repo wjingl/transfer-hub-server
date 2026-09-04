@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>统计 — RaptorQR 发送管理</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <div id="topbar" class="topbar"></div>
+  <div class="container">
+    <h1 class="page-title">统计（总管理）</h1>
+    <p class="page-sub">全局传出统计与每人统计（图形化视图）</p>
+    <div id="alert" class="alert"></div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" id="sTotal">-</div><div class="label">传出次数</div></div>
+      <div class="stat-card"><div class="num" id="sBytes">-</div><div class="label">传出总大小</div></div>
+      <div class="stat-card"><div class="num" id="sDone">-</div><div class="label">已完成</div></div>
+      <div class="stat-card"><div class="num" id="sSending">-</div><div class="label">传输中</div></div>
+    </div>
+
+    <div class="card">
+      <h2>每日趋势</h2>
+      <div class="chart-toolbar">
+        <span class="seg" id="segDays">
+          <button data-days="7">近 7 天</button>
+          <button data-days="14">近 14 天</button>
+          <button data-days="30" class="active">近 30 天</button>
+          <button data-days="90">近 90 天</button>
+        </span>
+        <span class="seg" id="segMetric">
+          <button data-metric="n" class="active">次数</button>
+          <button data-metric="bytes">大小</button>
+        </span>
+        <span class="hint">悬浮柱体查看数值 · 右下可展开明细表</span>
+        <button class="btn sm secondary" id="btnDailyDetail">展开明细表</button>
+      </div>
+      <div class="chart-box" id="dailyChart"></div>
+      <div class="table-wrap" id="dailyDetail" style="display:none;margin-top:12px;">
+        <table><thead><tr><th>日期</th><th>次数</th><th>大小</th></tr></thead><tbody id="dailyBody"></tbody></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>按目的地</h2>
+      <div class="chart-box" id="destChart" style="margin-bottom:10px;"></div>
+      <div class="table-wrap"><table><thead><tr><th>目的地</th><th>次数</th><th>大小</th><th>已完成</th></tr></thead><tbody id="destBody"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h2>每人统计</h2>
+      <div class="chart-box" id="userChart" style="margin-bottom:10px;"></div>
+      <div class="table-wrap"><table><thead><tr><th>用户</th><th>次数</th><th>大小</th><th>已完成</th></tr></thead><tbody id="userBody"></tbody></table></div>
+    </div>
+  </div>
+  <script src="/js/common.js"></script>
+  <script src="/js/charts.js"></script>
+  <script src="/js/stats.js"></script>
+</body>
+</html>
