@@ -1,10 +1,13 @@
 'use strict';
 /* ============================================================================
- * 外发工作台桥接（父页面控制器）
+ * 外发工作台桥接（父页面控制器 · 单一控制面）
  * - 传输内核（/hub）以同源 iframe 原样嵌入，字节不做任何修改
- * - 本脚本只做三件事：读内核页面上用户选择的载荷元数据、创建外发记录、
- *   联动内核的「开始发送 / 停止」把记录状态机走完（sending → completed/failed/stopped）
- * - 未经登记直接在内核里点「开始发送」会收到未登记提醒（不阻断使用）
+ * - 监管约束：内核自身的「开始发送/Start Live QR/Stop/停止」按钮在工作台内一律隐藏，
+ *   外发的开始与结束统一由登记条的主按钮驱动：
+ *     空闲  → 「① 登记并开始外发」（创建记录并自动开始播放）
+ *     进行中 → 「② 外发完成」（自动停止播放并完结记录）
+ *   另有「标记失败 / 取消记录」辅助操作，同样会自动停止播放。
+ * - 未经工作台直接访问 /hub 仍可用（登录用户），但工作台内不可能绕过登记发送。
  * ========================================================================== */
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -18,7 +21,7 @@
     payload: null,        // { kind: 'file'|'text', file?, text?, filename, size, mime, isText }
     watching: false,
     finalized: false,
-    pendingStop: false, // 手动完结后若内核仍在编码/发送，待停止按钮出现立即点停
+    pendingStop: false,   // 手动完结后若内核仍在编码/发送，待停止按钮出现立即点停
   };
 
   /* ------------------------------ 基础工具 ------------------------------ */
@@ -71,7 +74,7 @@
   function findButton(texts) {
     return hubButtons().find((b) => {
       const t = (b.textContent || '').trim();
-      return texts.some((x) => t.includes(x));
+      return texts.some((x) => t === x || t.includes(x));
     });
   }
 
@@ -120,9 +123,9 @@
     st.textContent = recState !== undefined ? recState : st.textContent;
     st.className = `recstate${recOk ? ' ok' : ''}`;
     const hasActive = Boolean(state.activeRecord);
-    $('reg-start').disabled = hasActive || !state.payload;
-    $('reg-start').textContent = state.activeRecord ? '记录进行中…' : '① 登记并开始外发';
-    $('reg-done').disabled = !hasActive;
+    const main = $('reg-main');
+    main.textContent = hasActive ? '② 外发完成' : '① 登记并开始外发';
+    main.disabled = hasActive ? false : !state.payload;
     $('reg-fail').disabled = !hasActive;
     $('reg-cancel').disabled = !hasActive;
   }
@@ -143,11 +146,10 @@
       toast(`更新记录状态失败：${err.message}`);
     }
     state.activeRecord = null;
-    setBar({ recState: '' });
+    setBar({});
   }
 
   /* ------------------------------ 联动内核停止 ------------------------------ */
-  // 手动完结（外发完成/标记失败/取消记录）时自动停掉二维码滚动，避免记录已结、画面仍在播放
   function stopHubSend() {
     state.pendingStop = true;
     tryStopNow();
@@ -155,16 +157,25 @@
 
   function tryStopNow() {
     if (!state.pendingStop || !hubReady()) return;
-    const stopBtn = hubButtons().find((b) => {
-      const t = (b.textContent || '').trim();
-      return t === '停止' || t === 'Stop'; // Cimbar 页为「停止」，RaptorQR 页为「Stop」
-    });
+    const stopBtn = findButton(['停止', 'Stop']); // Cimbar 页「停止」/ RaptorQR 页「Stop」
     if (stopBtn) {
       stopBtn.click();
       state.pendingStop = false;
     }
   }
-  setInterval(tryStopNow, 500);
+
+  // 监管隐藏：工作台内屏蔽内核自身的开始/停止按钮，统一由登记条驱动
+  function applySupervision() {
+    if (!hubReady()) return;
+    for (const b of hubButtons()) {
+      const t = (b.textContent || '').trim();
+      if (t === '开始发送' || t === 'Start Live QR' || t === '停止' || t === 'Stop') {
+        b.style.display = 'none';
+      }
+    }
+  }
+
+  setInterval(() => { tryStopNow(); applySupervision(); }, 500);
 
   function startWatching() {
     if (state.watching) return;
@@ -187,7 +198,7 @@
       }
       const status = hubStatusText();
       if (/正在发送|发送中|正在编码|运行中|Live QR/.test(status)) seenRunning = true;
-      if (findButton(['停止'])) { seenRunning = true; return; } // 运行中
+      if (findButton(['停止', 'Stop'])) { seenRunning = true; return; } // 运行中
       if (!seenRunning) return; // 尚未真正开始（等待编码/初始化失败提示等）
       clearInterval(timer);
       state.watching = false;
@@ -244,29 +255,14 @@
     state.pendingStop = false;
     setBar({ recState: `记录 #${record.id} 外发中…` });
 
-    // 联动内核开始发送
-    const startBtn = findButton(['开始发送']);
+    // 联动内核开始发送（Cimbar 页「开始发送」/ RaptorQR 页「Start Live QR」）
+    const startBtn = findButton(['开始发送', 'Start Live QR']);
     if (startBtn) {
       startBtn.click();
-      startWatching();
     } else {
-      toast('未找到内核「开始发送」按钮，请手动点击开始；记录将继续保持外发中');
-      startWatching();
+      toast('未找到内核开始按钮，请稍候片刻或刷新工作台；记录继续保持外发中');
     }
-  }
-
-  /* ------------------------------ 未登记提醒 ------------------------------ */
-  function bindFrameGuard() {
-    const doc = frame.contentDocument;
-    if (!doc) return;
-    doc.addEventListener('click', (event) => {
-      const btn = event.target && event.target.closest ? event.target.closest('button') : null;
-      if (!btn || state.activeRecord) return;
-      const t = (btn.textContent || '').trim();
-      if (t.includes('开始发送') || t.includes('开始接收')) {
-        toast('提示：本次操作未经「登记并开始外发」，不会产生外发记录', 'warn');
-      }
-    }, true);
+    startWatching();
   }
 
   /* ------------------------------ 初始化 ------------------------------ */
@@ -285,11 +281,15 @@
     const dest = $('reg-dest');
     dest.innerHTML = state.destinations.map((d) => `<option value="${d}">${d}</option>`).join('');
 
-    $('reg-start').addEventListener('click', () => registerAndStart().catch((e) => toast(e.message)));
-    $('reg-done').addEventListener('click', async () => {
-      stopHubSend();
-      await finalizeRecord('completed');
-      setBar({ recState: '记录已完成 ✓', recOk: true });
+    // 单一主按钮：空闲=登记并开始外发；进行中=外发完成（自动停止播放）
+    $('reg-main').addEventListener('click', async () => {
+      if (state.activeRecord) {
+        stopHubSend();
+        await finalizeRecord('completed');
+        setBar({ recState: '记录已完成 ✓', recOk: true });
+      } else {
+        await registerAndStart();
+      }
     });
     $('reg-fail').addEventListener('click', async () => {
       stopHubSend();
@@ -312,7 +312,7 @@
       });
     };
     frame.addEventListener('load', () => {
-      setTimeout(() => { bindFrameGuard(); pollPayload(); }, 400);
+      setTimeout(() => { pollPayload(); applySupervision(); }, 400);
       const doc = frame.contentDocument;
       if (doc) doc.addEventListener('change', (e) => {
         if (e.target && e.target.type === 'file') setTimeout(pollPayload, 100);
