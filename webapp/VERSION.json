@@ -2,9 +2,9 @@
   "note": "vendored TransferHub transfer core (byte-identical dist); cimbar runtime = pristine sz3/libcimbar v0.6.8 release files",
   "indexHtmlRefs": [
     "manifest.webmanifest",
-    "assets/index-szP4JomJ.js"
+    "assets/index-BwKaHotj.js"
   ],
-  "bundle": "assets/index-szP4JomJ.js",
+  "bundle": "assets/index-BwKaHotj.js",
   "cimbar": {
     "cimbar_js.2026-08-21T2336.js": "c18d4c47ffd9ad4bf6c5e6c9fb1e8a8a",
     "cimbar_js.2026-08-21T2336.wasm": "019a0d79419bdee0b918f409cdcfff91",
@@ -12,7 +12,7 @@
     "send-worker.2026-08-21T2336.js": "5fa739e2c4240bfc262ed09862d92a75",
     "recv-worker.2026-08-21T2336.js": "ab1ddadecc6ca25a92fd30b5daed03ff"
   },
-  "offlineZipBytes": 1676715,
+  "offlineZipBytes": 1676648,
   "androidApkBytes": 4608280,
-  "verifiedAt": "2026-09-05T03:58:53.736Z"
+  "verifiedAt": "2026-09-05T04:09:29.393Z"
 }
