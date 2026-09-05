@@ -6,3 +6,5 @@ config.json
 .mimosa/
 .zcode/
 .v2c/
+dist/
+.evt/

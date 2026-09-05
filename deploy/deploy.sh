@@ -61,12 +61,18 @@ if [ "$INSTALL_DIR" != "$PKG_DIR" ]; then
   for keep in data config.json; do
     [ -e "$INSTALL_DIR/$keep" ] && cp -a "$INSTALL_DIR/$keep" "$PKG_DIR/.keep-$keep" 2>/dev/null || true
   done
-  cp -a "$PKG_DIR/." "$INSTALL_DIR/" || true
+  # 排除构建输出与版本库元数据后整树复制
+  tar -C "$PKG_DIR" --exclude=./dist --exclude=./.git --exclude=./data -cf - . | tar -C "$INSTALL_DIR" -xf -
   for keep in data config.json; do
     [ -e "$PKG_DIR/.keep-$keep" ] && { rm -rf "$INSTALL_DIR/$keep"; mv "$PKG_DIR/.keep-$keep" "$INSTALL_DIR/$keep"; } || true
   done
 fi
 cd "$INSTALL_DIR"
+
+# ---------- 3.5 传输内核完整性校验（prep）----------
+say "校验传输内核完整性（scripts/prep.js）..."
+"$NODE" scripts/prep.js || die "传输内核校验失败：webapp/dist 不完整或被改动，禁止上线。"
+
 
 # ---------- 4. 配置初始化 ----------
 if [ ! -f config.json ]; then
@@ -154,7 +160,7 @@ fi
 # ---------- 7. 健康检查 ----------
 say "健康检查中（端口 $PORT_FROM_CFG）..."
 for i in $(seq 1 15); do
-  if "$NODE" -e "fetch('http://127.0.0.1:$PORT_FROM_CFG/api/health').then(r=>{if(r.ok)process.exit(0);process.exit(1)}).catch(()=>process.exit(1))" 2>/dev/null; then
+  if "$NODE" -e "fetch('http://127.0.0.1:$PORT_FROM_CFG/api/health').then(r=>{process.exitCode=r.ok?0:1}).catch(()=>{process.exitCode=1})" 2>/dev/null; then
     say "服务已就绪！"
     break
   fi

@@ -53,24 +53,46 @@ npm start        # 本地启动（读 config.json，默认 1145）
 
 首次启动访问 `http://127.0.0.1:1145/setup` 创建总管理。
 
-## 三、部署（服务器离线可用）
+## 三、部署与升级（一键化，服务器离线可用）
 
-在联网构建机上打包：
-
-```bash
-npm install --omit=dev
-tar czf transferhub-server.tar.gz app webapp scripts deploy package.json package-lock.json
-```
-
-目标服务器（Node ≥22，或自带 runtime/）：
+### 1. 在联网构建机打部署包
 
 ```bash
-tar xzf transferhub-server.tar.gz -C /opt/transferhub
-cd /opt/transferhub && npm install --omit=dev   # 有 node_modules 可跳过
-./deploy/deploy.sh                              # systemd 服务 + 开机自启
+npm install            # 首次
+npm run package        # 产物：dist/transferhub-server_v<版本>.tar.gz（含 node_modules，17MB 左右）
+# 或 npm run package -- --no-deps   # 不带依赖（目标机可联网 npm install 时用）
 ```
 
-常用运维：`./deploy/status.sh | start.sh | stop.sh | restart.sh | update.sh`；备份与保留期清理见 `config.json` 的 `backup` 段。
+打包脚本会先执行 `npm run prep` 校验传输内核完整性，不通过坚决不出包；包内附带 `SHA256SUMS.txt` 供部署侧核验。若把 Node 24 linux-x64 解压为项目根的 `runtime/`，打包时会自动捆绑（目标机零环境）。
+
+### 2. 目标服务器一键部署
+
+```bash
+tar xzf transferhub-server_v1.2.0.tar.gz && cd transferhub-server_v1.2.0
+sudo ./deploy/deploy.sh            # systemd 加固服务 + 开机自启 + 健康检查
+# 可选环境变量：INSTALL_DIR=/opt/transferhub PORT=1145 HOST=0.0.0.0 SERVICE_USER=thub
+# 管理员引导：RQR_ADMIN_USERNAME=xx RQR_ADMIN_PASSWORD=xx sudo -E ./deploy/deploy.sh
+```
+
+脚本自动完成：Node 运行时检测（捆绑优先）→ 依赖校验 → **传输内核完整性校验（prep）** → 安装（保留 data/ 与 config.json）→ 专用账号 → systemd（带 ProtectSystem 等加固）或 nohup 回退 → 健康检查 → 输出访问地址。
+
+### 3. 一条命令更新新版本
+
+```bash
+# 构建机出新包后上传，服务器上执行：
+./deploy/update.sh /path/to/transferhub-server_v1.3.0.tar.gz
+```
+
+更新流程自动：停服 → **在线备份数据库** → 替换代码（保留 data/ 与 config.json/secrets）→ **新包内核校验（prep，失败自动中止并提示回滚）** → 重启 → 状态确认；上一版完整保留在 `.update-prev/` 供随时回滚。
+
+### 4. 日常运维命令
+
+| 命令 | 作用 |
+|---|---|
+| `./deploy/status.sh` / `start.sh` / `stop.sh` / `restart.sh` | 服务启停与状态（systemd/nohup 自适应） |
+| `./deploy/logs.sh [行数]` | 跟踪服务日志（journalctl 或 nohup.log 自适应） |
+| `./deploy/backup.sh` | SQLite 在线安全备份 + secrets，默认保留 7 份 |
+| `node scripts/cli.js health` / `stats` / `backup` / `create-admin` / `reset-password` / `export-records` | 本机离线维护 CLI |
 
 ## 四、配置要点（config.json）
 

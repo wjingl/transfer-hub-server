@@ -267,7 +267,7 @@ function createApp(ctx) {
   // 系统信息（总管理）
   app.get('/api/system/info', requireAuth, requireAdmin, (req, res) => {
     res.json({
-      version: '1.0.0',
+      version: require('../package.json').version,
       node: process.version,
       uptimeSeconds: Math.round(process.uptime()),
       destinations: config.destinations,

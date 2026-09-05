@@ -13,12 +13,18 @@ NODE="$DIR/runtime/bin/node"
 SRC="${1:-}"
 [ -n "$SRC" ] || { echo "用法: $0 <新部署包目录或 tar.gz>"; exit 1; }
 
-# 解析来源
+# 解析来源（cd 后用相对文件名调用 tar，兼容 Git Bash/Windows 盘符路径；自动剥离包内顶层目录）
 TMP=""
 if [ -f "$SRC" ] && [[ "$SRC" == *.tar.gz ]]; then
   TMP="$(mktemp -d)"
-  tar -xzf "$SRC" -C "$TMP"
-  SRC="$TMP"
+  SRC_ABS="$(cd "$(dirname "$SRC")" && pwd)"
+  ( cd "$SRC_ABS" && tar -xzf "$(basename "$SRC")" -C "$TMP" )
+  if [ -f "$TMP/package.json" ]; then
+    SRC="$TMP"
+  else
+    SUB="$(find "$TMP" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -n1)"
+    [ -n "$SUB" ] && SRC="$SUB" || { echo "更新包结构异常"; rm -rf "$TMP"; exit 1; }
+  fi
 elif [ -d "$SRC" ]; then
   SRC="$(cd "$SRC" && pwd)"
 else
@@ -55,7 +61,16 @@ for keep in data config.json; do
 done
 chmod +x "$DIR"/deploy/*.sh 2>/dev/null || true
 
-echo "== 4/4 启动 =="
+echo "== 4/5 内核完整性校验 =="
+NODE="$(command -v node || echo "$DIR/runtime/bin/node")"
+[ -x "$NODE" ] || NODE=node
+if ! "$NODE" scripts/prep.js; then
+  echo "新包内核校验失败，已中止启动。可回滚："
+  echo "  rm -rf $DIR/app $DIR/webapp $DIR/scripts $DIR/deploy && cp -a $DIR/.update-prev/* $DIR/ && $DIR/deploy/start.sh"
+  exit 1
+fi
+
+echo "== 5/5 启动 =="
 "$DIR/deploy/start.sh" || { echo "启动失败，可回滚："; echo "  mv $DIR/.update-prev/* $DIR/ 后再次启动"; exit 1; }
 sleep 1
 "$DIR/deploy/status.sh" || true
