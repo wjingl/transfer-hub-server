@@ -663,7 +663,7 @@ test('传输内核原样分发：/app 为工作台、/hub 文档需登录、官�
     const asset = await c.rq.get(`/hub/assets/${bundle}`).set('Cookie', admin.cookie);
     assert.equal(asset.status, 200);
     // 官方 Cimbar 运行时五件套必须随包存在
-    for (const f of ['cimbar_js.2026-08-21T2336.js', 'cimbar_js.2026-08-21T2336.wasm', 'send.2026-08-21T2336.js', 'send-worker.2026-08-21T2336.js', 'recv-worker.2026-08-21T2336.js']) {
+    for (const f of ['cimbar_js.2026-08-21T2336.js', 'cimbar_js.2026-08-21T2336.wasm', 'send.2026-08-21T2336.js', 'send-worker.2026-08-21T2336.js', 'recv-worker.2026-08-21T2336.js', 'recv.2026-08-21T2336.js', 'zstd.2026-08-21T2336.js', 'recv.html', 'pwa-recv.2026-08-21T2336.json']) {
       const r = await c.rq.get(`/hub/cimbar/${f}`).set('Cookie', admin.cookie);
       assert.equal(r.status, 200, f);
     }
