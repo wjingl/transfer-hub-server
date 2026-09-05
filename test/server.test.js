@@ -675,6 +675,33 @@ test('传输内核原样分发：/app 为工作台、/hub 文档需登录、官�
   } finally { c.db.close(); }
 });
 
+test('外发超时兜底：遗留「进行中」超过 10 分钟自动截止为 failed', async () => {
+  const c = makeTestContext();
+  try {
+    await bootstrap(c);
+    const admin = await loginAgent(c.rq, 'chief', 'ChiefPass123');
+    await createApprovedUser(c, { username: 'alice', displayName: 'Alice', password: 'AlicePass123' }, admin);
+    const alice = await loginAgent(c.rq, 'alice', 'AlicePass123');
+    const csrf = alice.csrf;
+    const rec = await c.rq.post('/api/records').set('Cookie', alice.cookie).set('X-CSRF-Token', csrf)
+      .send({ destination: 'jzw', filename: '超时演练.txt', size: 3, isText: true });
+    assert.equal(rec.status, 201);
+    // 把 started_at 拨到 11 分钟前
+    const stale = new Date(Date.now() - 11 * 60000).toISOString();
+    c.db.db.prepare('UPDATE records SET started_at = ? WHERE id = ?').run(stale, rec.body.record.id);
+    const before = c.db.getRecord(rec.body.record.id);
+    assert.equal(before.status, 'sending');
+    const marked = c.db.failStaleSending(10);
+    assert.equal(marked, 1);
+    const after = c.db.getRecord(rec.body.record.id);
+    assert.equal(after.status, 'failed');
+    assert.match(after.note, /外发超时/);
+    assert.ok(after.completed_at);
+    // 再跑一次：已截止的不会重复处理
+    assert.equal(c.db.failStaleSending(10), 0);
+  } finally { c.db.close(); }
+});
+
 /* ==================== 备份：上传 / 下载 / 权限 / 清理 ==================== */
 test('备份：创建记录带 content 落盘，无 content 兼容', async () => {
   const c = makeTestContext();

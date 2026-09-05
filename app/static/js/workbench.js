@@ -22,6 +22,9 @@
     watching: false,
     finalized: false,
     pendingStop: false,   // 手动完结后若内核仍在编码/发送，待停止按钮出现立即点停
+    timeoutMinutes: 10,
+    timeoutAt: 0,         // 外发截止时间戳
+    countdownTimer: 0,
   };
 
   /* ------------------------------ 基础工具 ------------------------------ */
@@ -135,9 +138,18 @@
   }
 
   /* ------------------------------ 记录状态机 ------------------------------ */
+  function clearCountdown() {
+    if (state.countdownTimer) {
+      clearInterval(state.countdownTimer);
+      state.countdownTimer = 0;
+    }
+    state.timeoutAt = 0;
+  }
+
   async function finalizeRecord(status, note) {
     if (!state.activeRecord || state.finalized) return;
     state.finalized = true;
+    clearCountdown();
     try {
       await api(`/api/records/${state.activeRecord.id}/status`, { method: 'POST', body: { status, note } });
     } catch (err) {
@@ -311,7 +323,26 @@
     state.activeRecord = { id: record.id, filename: record.filename, size: record.size, destination: record.destination };
     state.finalized = false;
     state.pendingStop = false;
-    setBar({ recState: `记录 #${record.id} 外发中…` });
+    // 外发超时自动截止：超时后停止播放并将记录置为 failed
+    const timeoutMs = state.timeoutMinutes * 60000;
+    state.timeoutAt = Date.now() + timeoutMs;
+    const fmtLeft = () => {
+      const left = Math.max(0, Math.ceil((state.timeoutAt - Date.now()) / 1000));
+      return `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+    };
+    state.countdownTimer = setInterval(async () => {
+      if (!state.activeRecord || state.finalized) { clearCountdown(); return; }
+      if (Date.now() >= state.timeoutAt) {
+        clearCountdown();
+        stopHubSend();
+        await finalizeRecord('failed', `外发超时（超过 ${state.timeoutMinutes} 分钟未完成，系统自动截止）`);
+        setBar({ recState: '记录已超时截止' });
+        toast(`外发超时（${state.timeoutMinutes} 分钟），已自动停止并标记记录`, 'warn');
+        return;
+      }
+      setBar({ recState: `记录 #${state.activeRecord.id} 外发中…（剩余 ${fmtLeft()}）` });
+    }, 1000);
+    setBar({ recState: `记录 #${record.id} 外发中…（剩余 ${fmtLeft()}）` });
 
     // 联动内核开始发送（Cimbar 页「开始发送」/ RaptorQR 页「Start Live QR」）
     const startBtn = findButton(['开始发送', '开始实况二维码', 'Start Live QR']);
@@ -333,6 +364,7 @@
       const cfg = await api('/api/bridge/config');
       state.destinations = cfg.destinations || [];
       state.backup = cfg.backup || state.backup;
+      state.timeoutMinutes = Number(cfg.sendTimeoutMinutes) || 10;
     } catch (err) {
       toast(`加载工作台配置失败：${err.message}`);
     }

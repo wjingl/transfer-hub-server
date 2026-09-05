@@ -227,7 +227,7 @@ function createApp(ctx) {
   app.post('/api/auth/change-password', requireAuth, auth.changePassword);
   app.post('/api/auth/change-password-forced', requireAuth, auth.changePasswordForced);
 
-  // 工作台配置（目的地/备份参数，供桥接 UI 渲染）
+  // 工作台配置（目的地/备份/超时参数，供桥接 UI 渲染）
   app.get('/api/bridge/config', requireAuth, (req, res) => {
     res.json({
       destinations: config.destinations,
@@ -235,6 +235,7 @@ function createApp(ctx) {
         enabled: Boolean(config.backup.enabled),
         maxFileBytes: config.backup.maxFileBytes,
       },
+      sendTimeoutMinutes: Number(config.sendTimeoutMinutes) || 10,
     });
   });
 
@@ -444,6 +445,16 @@ async function start() {
   server.keepAliveTimeout = 5000;
   server.maxConnections = config.limits.maxConnections;
 
+  // 外发超时兜底巡检（每 60 秒）：遗留「进行中」超过 10 分钟的记录自动截止标记
+  const SEND_TIMEOUT_MINUTES = Number(config.sendTimeoutMinutes) || 10;
+  const sweepTimer = setInterval(() => {
+    try {
+      const n = db.failStaleSending(SEND_TIMEOUT_MINUTES);
+      if (n > 0) console.log(`[sweep] 外发超时自动截止 ${n} 条记录`);
+    } catch (_) { /* 尽力而为 */ }
+  }, 60 * 1000);
+  sweepTimer.unref();
+
   // 定时清理过期会话、验证码与过期备份（每 10 分钟）
   const timer = setInterval(() => {
     try {
@@ -470,6 +481,7 @@ async function start() {
     // eslint-disable-next-line no-console
     console.log(`收到 ${signal}，正在优雅停机...`);
     clearInterval(timer);
+    clearInterval(sweepTimer);
     server.close(() => {
       try { db.checkpoint(); } catch (_) {}
       db.close();

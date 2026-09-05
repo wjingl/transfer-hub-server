@@ -63,5 +63,6 @@
   },
   "security": {
     "trustProxy": false
-  }
+  },
+  "sendTimeoutMinutes": 10
 }

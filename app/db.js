@@ -332,6 +332,27 @@ class RqrDb {
   }
 
   /* ------------------------------ audit ------------------------------ */
+  // 外发超时兜底：将「进行中」超过 timeoutMinutes 的记录自动置为 failed 并写审计
+  failStaleSending(timeoutMinutes) {
+    const cutoff = new Date(Date.now() - timeoutMinutes * 60000).toISOString();
+    const rows = this.db
+      .prepare("SELECT id, user_id, username, filename FROM records WHERE status = 'sending' AND started_at <= ?")
+      .all(cutoff);
+    if (rows.length === 0) return 0;
+    const note = `外发超时（超过 ${timeoutMinutes} 分钟，系统自动截止）`;
+    const upd = this.db.prepare(
+      "UPDATE records SET status = 'failed', completed_at = ?, note = CASE WHEN note = '' THEN ? ELSE note || ' | ' || ? END WHERE id = ?",
+    );
+    const tx = this.db.transaction((list) => {
+      for (const r of list) {
+        upd.run(new Date().toISOString(), note, note, r.id);
+        this.st.insertAudit.run(new Date().toISOString(), r.user_id, r.username, 'RECORD_TIMEOUT', `${r.filename} ${note}`.slice(0, 2000), '');
+      }
+    });
+    tx(rows);
+    return rows.length;
+  }
+
   audit({ userId = null, username = '', action, detail = '', ip = '' }) {
     this.st.insertAudit.run(nowISO(), userId, username, action, detail.slice(0, 2000), ip || '');
   }

@@ -17,6 +17,7 @@ const DEFAULTS = {
   lockout: { maxFails: 5, windowMinutes: 15, lockMinutes: 15 },
   captcha: { enabled: true, afterFailures: 2, ttlMinutes: 5 },
   password: { minLength: 8, maxLength: 64, resetDefault: 'Transfer@1145' },
+  sendTimeoutMinutes: 10,
   registration: { enabled: true },
   batchRegister: { initialPassword: '' },
   admin: {
