@@ -149,6 +149,66 @@
     setBar({});
   }
 
+  /* ------------------------------ 二维码全屏显示 ------------------------------ */
+  function injectFullscreenStyle() {
+    const doc = frame.contentDocument;
+    if (!doc || doc.getElementById('th-fs-style')) return;
+    const style = doc.createElement('style');
+    style.id = 'th-fs-style';
+    style.textContent = [
+      'canvas:fullscreen, img:fullscreen {',
+      '  width: 100vw !important; height: 100vh !important;',
+      '  object-fit: contain !important;',
+      '  background: #000 !important; margin: 0 !important; border-radius: 0 !important;',
+      '}',
+      ':fullscreen { background: #000; }',
+    ].join('\n');
+    doc.head.appendChild(style);
+  }
+
+  // 取内核页面里面积最大的二维码画布/图片（RaptorQR 与 Cimbar 均为 canvas）
+  function qrElement() {
+    const doc = frame.contentDocument;
+    if (!doc) return null;
+    let best = null;
+    let bestArea = 0;
+    for (const el of doc.querySelectorAll('#root canvas, #root img')) {
+      const area = (el.clientWidth || 0) * (el.clientHeight || 0);
+      if (area > bestArea) { best = el; bestArea = area; }
+    }
+    return best;
+  }
+
+  function isFullscreen() {
+    const fsElement = document.fullscreenElement || frame.contentDocument && frame.contentDocument.fullscreenElement;
+    return Boolean(fsElement);
+  }
+
+  function updateFullBtn() {
+    $('reg-full').textContent = isFullscreen() ? '✕ 退出全屏' : '⛶ 全屏';
+  }
+
+  async function toggleFullscreen() {
+    if (isFullscreen()) {
+      await document.exitFullscreen();
+      updateFullBtn();
+      return;
+    }
+    if (!hubReady()) { toast('内核尚未就绪，稍后再试'); return; }
+    injectFullscreenStyle();
+    const el = qrElement();
+    try {
+      if (el) await el.requestFullscreen();
+      else await frame.requestFullscreen();
+    } catch (_) {
+      // 元素级失败（如画布尚未渲染）→ 整个内核区全屏兜底
+      await frame.requestFullscreen();
+    }
+    updateFullBtn();
+  }
+
+  document.addEventListener('fullscreenchange', updateFullBtn);
+
   /* ------------------------------ 联动内核停止 ------------------------------ */
   function stopHubSend() {
     state.pendingStop = true;
@@ -302,6 +362,8 @@
       setBar({ recState: '记录已取消' });
     });
 
+    $('reg-full').addEventListener('click', () => toggleFullscreen().catch((e) => toast(`全屏失败：${e.message}`)));
+
     // 载荷变化：文件选择 / 文本输入（捕获阶段委托，兼容内核重渲染）
     const pollPayload = async () => {
       if (state.activeRecord) return;
@@ -312,7 +374,7 @@
       });
     };
     frame.addEventListener('load', () => {
-      setTimeout(() => { pollPayload(); applySupervision(); }, 400);
+      setTimeout(() => { pollPayload(); applySupervision(); injectFullscreenStyle(); }, 400);
       const doc = frame.contentDocument;
       if (doc) doc.addEventListener('change', (e) => {
         if (e.target && e.target.type === 'file') setTimeout(pollPayload, 100);
