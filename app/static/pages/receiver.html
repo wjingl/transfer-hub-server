@@ -9,11 +9,11 @@
 <body>
   <div class="auth-wrap" style="min-height:auto;padding-top:40px;">
     <div class="auth-card" style="max-width:560px;">
-      <h1>📥 离线收发包</h1>
-      <p class="sub">完整传输内核（RaptorQR 标准二维码 + Cimbar 彩色码，发送与接收均包含）。纯本地运行，无需连接本服务器；扫描设备的摄像头接收请使用此离线包。</p>
+      <h1>📥 接收端下载（仅接收）</h1>
+      <p class="sub">专用接收端：只具备接收能力（RaptorQR 标准二维码 + Cimbar 彩色码），不含发送功能——文件外发只能通过本平台带登记监管的工作台进行。纯本地运行，无需连接本服务器。</p>
       <div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">
-        <a class="btn" href="/receiver/download" style="text-align:center;">⬇ 电脑离线包 TransferHub-offline.zip（Windows / macOS / Linux）</a>
-        <a class="btn" href="/receiver/download-apk" style="text-align:center;">🤖 Android 应用 TransferHub-android.apk（手机直接安装）</a>
+        <a class="btn" href="/receiver/download" style="text-align:center;">⬇ 电脑接收端 TransferHub-Receiver-offline.zip（Windows / macOS / Linux，仅接收）</a>
+        <a class="btn" href="/receiver/download-apk" style="text-align:center;">🤖 Android 接收端 TransferHub-Receiver-android.apk（手机直接安装，仅接收）</a>
       </div>
       <p style="font-size:12px;color:#6e7681;line-height:1.8;">
         电脑包：解压后 Windows 双击 <b>open-transfer-hub.bat</b>（系统自带 PowerShell 启动，随机端口）；
@@ -21,7 +21,7 @@
         Android 包：直接安装（需允许"安装未知应用"），打开即是完整发送/接收端，无需电脑。<br />
         注意：浏览器仅允许在 <b>HTTPS 或 localhost</b> 使用摄像头，因此跨设备的摄像头接收请用离线包在本机打开，
         或经 HTTPS 访问本服务器。<br />
-        两个包与服务器内置的传输内核为同一构建（字节一致），协议互通。
+        两个包与服务器内置的传输内核为同一构建（字节一致），协议互通；仅接收版已锁定接收页，不含发送入口。
       </p>
       <div class="link-line"><a href="/app">&#8592; 返回工作台</a></div>
     </div>

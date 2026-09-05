@@ -7,7 +7,7 @@
 - 适配 **Linux x86 服务器**（无外网环境可离线部署），默认端口 **1145**
 - 管理端：Express 5 + better-sqlite3(WAL) + helmet + 会话/限流/CSRF/验证码/锁定
 - 统计图形化：每日趋势、目的地环形图、每人条形图（零依赖本地 SVG）
-- 离线分发：`/receiver` 提供与服务器内核同一构建的电脑离线包（zip）与 Android 应用（APK）；跨设备摄像头接收用离线包本机打开（摄像头需 HTTPS 或 localhost）
+- 仅接收分发：`/receiver` 提供与服务器内核同一构建的**仅接收**电脑包（zip）与 Android 应用（APK）——文件外发只能通过平台工作台（带登记监管）进行；跨设备摄像头接收用离线包本机打开（摄像头需 HTTPS 或 localhost）
 
 ---
 
@@ -30,7 +30,7 @@
 | `app/server.js` | Express 5 入口：helmet/CSP 分级、会话、限流、CSRF、优雅停机；`/hub` 静态托管传输内核、`/app` 工作台、`/receiver` 离线包 |
 | `app/static/pages/workbench.html` + `app/static/js/workbench.js` | 外发工作台：父页面登记条（目的地/备注）+ 同源 iframe 内嵌内核；读取内核内用户选择的载荷元数据 → 创建记录 → 联动「开始发送/停止」走完记录状态机；未登记直接发送会收到提醒（不阻断） |
 | `webapp/dist` | 传输内核（TransferHub 构建产物，字节原样；`scripts/prep.js` 校验完整性并生成 `webapp/VERSION.json` 清单） |
-| `webapp/transfer-hub-offline.zip` / `webapp/transfer-hub-android.apk` | 离线收发包与 Android 应用（与 `/hub` 同一构建，均从 `/receiver` 页下载） |
+| `webapp/transfer-hub-receiver-offline.zip` / `webapp/transfer-hub-receiver-android.apk` | **仅接收**分发物（电脑 zip / Android APK，与 `/hub` 同一构建 + 接收守卫），从 `/receiver` 页下载；由 `npm run build:receiver` 生成 |
 | `app/db.js` / `app/auth.js` / `app/users.js` / `app/records.js` / `app/backup.js` | SQLite(WAL) 参数化查询、注册-审批-登录（锁定+验证码）、用户管理、外发记录与统计、内容备份（保留期清理） |
 | `app/static/js/charts.js` | 零依赖 SVG 图表（暗色主题） |
 | `scripts/cli.js` | 离线维护（建号/重置/备份/导出/统计） |
@@ -46,9 +46,10 @@
 
 ```bash
 npm install
-npm run prep     # 校验 webapp/dist 与离线包完整性，生成 VERSION.json
-npm test         # 全量服务端测试（node --test）
-npm start        # 本地启动（读 config.json，默认 1145）
+npm run prep            # 校验 webapp/dist 与分发物完整性，生成 VERSION.json
+npm run build:receiver  # 生成仅接收分发物（zip + 重签 APK）——分发物缺失时必须先执行
+npm test                # 全量服务端测试（node --test）
+npm start               # 本地启动（读 config.json，默认 1145）
 ```
 
 首次启动访问 `http://127.0.0.1:1145/setup` 创建总管理。
@@ -63,7 +64,7 @@ npm run package        # 产物：dist/transferhub-server_v<版本>.tar.gz（含
 # 或 npm run package -- --no-deps   # 不带依赖（目标机可联网 npm install 时用）
 ```
 
-打包脚本会先执行 `npm run prep` 校验传输内核完整性，不通过坚决不出包；包内附带 `SHA256SUMS.txt` 供部署侧核验。若把 Node 24 linux-x64 解压为项目根的 `runtime/`，打包时会自动捆绑（目标机零环境）。
+打包前自动执行 `build:receiver`（重建仅接收分发物）与 `npm run prep` 完整性校验，不通过坚决不出包；包内附带 `SHA256SUMS.txt` 供部署侧核验。若把 Node 24 linux-x64 解压为项目根的 `runtime/`，打包时会自动捆绑（目标机零环境）。
 
 ### 2. 目标服务器一键部署
 
@@ -121,4 +122,4 @@ sudo ./deploy/deploy.sh            # systemd 加固服务 + 开机自启 + 健�
 
 ## 七、升级传输内核
 
-用新版 TransferHub 构建产物整体替换 `webapp/dist/`，重新打包 `webapp/transfer-hub-offline.zip`，并放入同构建的 `webapp/transfer-hub-android.apk`，然后执行 `npm run prep` 校验（哈希清单会同步刷新，APK 缺失将无法通过打包）。不要手工修改 `webapp/dist` 内任何文件。
+用新版 TransferHub 构建产物整体替换 `webapp/dist/`，并放入同构建的完整版 APK（`webapp/transfer-hub-android.apk`，作为仅接收 APK 的重打包底稿），然后 `npm run build:receiver` 重新生成仅接收分发物、`npm run prep` 校验（清单自动刷新）。不要手工修改 `webapp/dist` 内任何文件；接收守卫只存在于衍生副本 `webapp/receiver-only/`。

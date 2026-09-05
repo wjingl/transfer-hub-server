@@ -12,7 +12,8 @@
     "dev": "node app/server.js",
     "test": "node --test \"test/*.test.js\"",
     "prep": "node scripts/prep.js",
-    "package": "bash scripts/build_package.sh"
+    "package": "npm run build:receiver && bash scripts/build_package.sh",
+    "build:receiver": "node scripts/build-receiver-variant.mjs && python scripts/build-receiver-apk.py"
   },
   "dependencies": {
     "@depup/svg-captcha": "1.4.0-depup.0",

@@ -8,3 +8,4 @@ config.json
 .v2c/
 dist/
 .evt/
+webapp/receiver-only/

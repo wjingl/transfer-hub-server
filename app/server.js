@@ -32,8 +32,8 @@ const { bootstrapAdmin } = require('./auth');
 
 const STATIC_DIR = path.join(__dirname, 'static');
 const HUB_DIST = path.join(ROOT, 'webapp', 'dist');
-const HUB_OFFLINE_ZIP = path.join(ROOT, 'webapp', 'transfer-hub-offline.zip');
-const HUB_ANDROID_APK = path.join(ROOT, 'webapp', 'transfer-hub-android.apk');
+const HUB_OFFLINE_ZIP = path.join(ROOT, 'webapp', 'transfer-hub-receiver-offline.zip');
+const HUB_ANDROID_APK = path.join(ROOT, 'webapp', 'transfer-hub-receiver-android.apk');
 
 /* ------------------------------ 响应优化：gzip + 文件缓存 ------------------------------ */
 // /hub 文档为 ~100KB 文本，按 mtime 缓存解析结果并按内容缓存 gzip 结果（有界）。
@@ -364,8 +364,8 @@ function createApp(ctx) {
       stream.pipe(res);
     });
   };
-  app.get('/receiver/download', serveDownload(HUB_OFFLINE_ZIP, 'TransferHub-offline.zip', 'application/zip', '离线包尚未生成，请运行 npm run prep'));
-  app.get('/receiver/download-apk', serveDownload(HUB_ANDROID_APK, 'TransferHub-android.apk', 'application/vnd.android.package-archive', 'APK 未就绪，请运行 npm run prep 检查 webapp/'));
+  app.get('/receiver/download', serveDownload(HUB_OFFLINE_ZIP, 'TransferHub-Receiver-offline.zip', 'application/zip', '仅接收离线包缺失，请运行 npm run build:receiver'));
+  app.get('/receiver/download-apk', serveDownload(HUB_ANDROID_APK, 'TransferHub-Receiver-android.apk', 'application/vnd.android.package-archive', '仅接收 APK 缺失，请运行 npm run build:receiver'));
 
   // 静态资源：管理端 css/js（短缓存）+ 传输内核（hash 命名，长缓存）
   app.use('/css', express.static(path.join(STATIC_DIR, 'css'), { dotfiles: 'ignore', index: false, maxAge: '5m' }));

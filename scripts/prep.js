@@ -11,7 +11,9 @@ const crypto = require('crypto');
 
 const ROOT = path.join(__dirname, '..');
 const DIST = path.join(ROOT, 'webapp', 'dist');
-const ZIP = path.join(ROOT, 'webapp', 'transfer-hub-offline.zip');
+const ZIP = path.join(ROOT, 'webapp', 'transfer-hub-receiver-offline.zip');
+const APK = path.join(ROOT, 'webapp', 'transfer-hub-receiver-android.apk');
+const BASE_APK = path.join(ROOT, 'webapp', 'transfer-hub-android.apk');
 
 function fail(msg) {
   // eslint-disable-next-line no-console
@@ -49,10 +51,11 @@ for (const f of CIMBAR) {
 
 // 3) 离线包与 Android APK 必须存在且 >1MB
 const zipOk = fs.existsSync(ZIP) && fs.statSync(ZIP).size > 1024 * 1024;
-if (!zipOk) fail('webapp/transfer-hub-offline.zip 缺失或过小（应由同一 dist 打包）');
-const APK = path.join(ROOT, 'webapp', 'transfer-hub-android.apk');
+if (!zipOk) fail('webapp/transfer-hub-receiver-offline.zip 缺失或过小（先运行 npm run build:receiver）');
 const apkOk = fs.existsSync(APK) && fs.statSync(APK).size > 1024 * 1024;
-if (!apkOk) fail('webapp/transfer-hub-android.apk 缺失或过小（放入与 dist 同构建的 Release APK）');
+const baseApkOk = fs.existsSync(BASE_APK) && fs.statSync(BASE_APK).size > 1024 * 1024; // 仅接收 APK 的重打包底稿
+if (!apkOk) fail('webapp/transfer-hub-receiver-android.apk 缺失或过小（先运行 npm run build:receiver）');
+if (!baseApkOk) fail('webapp/transfer-hub-android.apk 缺失或过小（放入与 dist 同构建的完整版 Release APK 作为重打包底稿）');
 
 // 4) 刷新清单（provenance）
 const bundle = refs.find((r) => /^assets\/index-.*\.js$/.test(r)) || '';
@@ -62,7 +65,7 @@ const manifest = {
   bundle,
   cimbar: Object.fromEntries(CIMBAR.map((f) => [f, sha256(path.join(DIST, 'cimbar', f)).slice(0, 32)])),
   offlineZipBytes: fs.statSync(ZIP).size,
-  androidApkBytes: fs.statSync(APK).size,
+  androidApkBytes: fs.statSync(APK).size, // 仅接收重签版
   verifiedAt: new Date().toISOString(),
 };
 fs.writeFileSync(path.join(ROOT, 'webapp', 'VERSION.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
