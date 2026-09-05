@@ -151,8 +151,10 @@ function createApp(ctx) {
     res.setHeader('X-Frame-Options', isHub ? 'SAMEORIGIN' : 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
-    // 仅 /hub 需要摄像头（接收页）；管理端各页全部禁用
-    res.setHeader('Permissions-Policy', isHub
+    // 摄像头权限策略：/app（工作台，父页）与 /hub（内核页）必须允许 (self)——
+    // Permissions-Policy 沿 iframe 树继承，父页若为 camera=() 会连带禁用同源 iframe 内的摄像头
+    const isWorkbench = req.path === '/app';
+    res.setHeader('Permissions-Policy', (isHub || isWorkbench)
       ? 'camera=(self), microphone=(), geolocation=(), payment=()'
       : 'camera=(), microphone=(), geolocation=(), payment=()');
     // 页面/API 禁止缓存；静态资源交给 express.static 的 ETag+maxAge 管理
