@@ -18,6 +18,7 @@
     payload: null,        // { kind: 'file'|'text', file?, text?, filename, size, mime, isText }
     watching: false,
     finalized: false,
+    pendingStop: false, // 手动完结后若内核仍在编码/发送，待停止按钮出现立即点停
   };
 
   /* ------------------------------ 基础工具 ------------------------------ */
@@ -145,6 +146,26 @@
     setBar({ recState: '' });
   }
 
+  /* ------------------------------ 联动内核停止 ------------------------------ */
+  // 手动完结（外发完成/标记失败/取消记录）时自动停掉二维码滚动，避免记录已结、画面仍在播放
+  function stopHubSend() {
+    state.pendingStop = true;
+    tryStopNow();
+  }
+
+  function tryStopNow() {
+    if (!state.pendingStop || !hubReady()) return;
+    const stopBtn = hubButtons().find((b) => {
+      const t = (b.textContent || '').trim();
+      return t === '停止' || t === 'Stop'; // Cimbar 页为「停止」，RaptorQR 页为「Stop」
+    });
+    if (stopBtn) {
+      stopBtn.click();
+      state.pendingStop = false;
+    }
+  }
+  setInterval(tryStopNow, 500);
+
   function startWatching() {
     if (state.watching) return;
     state.watching = true;
@@ -220,6 +241,7 @@
 
     state.activeRecord = { id: record.id, filename: record.filename, size: record.size, destination: record.destination };
     state.finalized = false;
+    state.pendingStop = false;
     setBar({ recState: `记录 #${record.id} 外发中…` });
 
     // 联动内核开始发送
@@ -265,14 +287,17 @@
 
     $('reg-start').addEventListener('click', () => registerAndStart().catch((e) => toast(e.message)));
     $('reg-done').addEventListener('click', async () => {
+      stopHubSend();
       await finalizeRecord('completed');
       setBar({ recState: '记录已完成 ✓', recOk: true });
     });
     $('reg-fail').addEventListener('click', async () => {
+      stopHubSend();
       await finalizeRecord('failed');
       setBar({ recState: '记录已标记失败' });
     });
     $('reg-cancel').addEventListener('click', async () => {
+      stopHubSend();
       await finalizeRecord('stopped');
       setBar({ recState: '记录已取消' });
     });
