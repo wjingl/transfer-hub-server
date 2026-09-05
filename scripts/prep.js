@@ -43,6 +43,8 @@ const CIMBAR = [
   'send.2026-08-21T2336.js',
   'send-worker.2026-08-21T2336.js',
   'recv-worker.2026-08-21T2336.js',
+  'recv.2026-08-21T2336.js',
+  'zstd.2026-08-21T2336.js',
 ];
 for (const f of CIMBAR) {
   const p = path.join(DIST, 'cimbar', f);

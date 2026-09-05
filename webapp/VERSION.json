@@ -2,17 +2,19 @@
   "note": "vendored TransferHub transfer core (byte-identical dist); cimbar runtime = pristine sz3/libcimbar v0.6.8 release files",
   "indexHtmlRefs": [
     "manifest.webmanifest",
-    "assets/index-D7GnWgze.js"
+    "assets/index-Cllz2i8-.js"
   ],
-  "bundle": "assets/index-D7GnWgze.js",
+  "bundle": "assets/index-Cllz2i8-.js",
   "cimbar": {
     "cimbar_js.2026-08-21T2336.js": "c18d4c47ffd9ad4bf6c5e6c9fb1e8a8a",
     "cimbar_js.2026-08-21T2336.wasm": "019a0d79419bdee0b918f409cdcfff91",
     "send.2026-08-21T2336.js": "9362a7d8460882291b40311ad7cc723e",
     "send-worker.2026-08-21T2336.js": "5fa739e2c4240bfc262ed09862d92a75",
-    "recv-worker.2026-08-21T2336.js": "ab1ddadecc6ca25a92fd30b5daed03ff"
+    "recv-worker.2026-08-21T2336.js": "ab1ddadecc6ca25a92fd30b5daed03ff",
+    "recv.2026-08-21T2336.js": "55f2d37ece3930e6c79a7aa82e3f9dbf",
+    "zstd.2026-08-21T2336.js": "47feb486b4986140f2350f9068b29051"
   },
-  "offlineZipBytes": 1677378,
-  "androidApkBytes": 4608280,
-  "verifiedAt": "2026-09-05T07:25:54.925Z"
+  "offlineZipBytes": 1679686,
+  "androidApkBytes": 4612556,
+  "verifiedAt": "2026-09-05T07:49:11.947Z"
 }
