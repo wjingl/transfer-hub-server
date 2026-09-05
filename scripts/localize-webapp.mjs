@@ -111,6 +111,9 @@ const TABLE = [
   [1, 'Camera zoom failed:', '摄像头变焦失败：'],
   [1, 'Recovered Text', '恢复的文本'],
   [1, 'Recovered File', '恢复的文件'],
+  // 开发者视角文案 → 使用者视角
+  [1, '同一界面，选择合适的传输格式', '选择协议，扫码即可传输'],
+  [1, '允许摄像头后对准 Cimbar 发送画面。内部引擎为官方 recv.js 原版实现：连续对焦/曝光、 原生分辨率捕获、4 worker 并行、模式自动轮询、角框状态提示与文件恢复下载均为官方逻辑。', '允许摄像头后对准发送画面即可完成接收；请保持画面稳定并尽量充满取景框。角框颜色提示扫描状态：蓝色未识别、黄色提取中、绿色已锁定。'],
   // 统计图例（带尾随空格的 JSX 文本，报告模式校准）
   [2, 'decoded', '已解码'],
   [2, 'unique ', '唯一包 '],
@@ -161,23 +164,26 @@ async function main() {
   for (const [count, en, zh] of TABLE) {
     const needle = JSON.stringify(en); // 带引号全词
     const hits = text.split(needle).length - 1;
-    reportRows.push([hits, en, zh, count]);
-    if (count > 0 && hits !== count) {
-      problems.push(`"${en}" 期望 ${count} 次，实际 ${hits} 次`);
+    const zhNeedle = JSON.stringify(zh);
+    const zhHits = text.split(zhNeedle).length - 1;
+    reportRows.push([hits, en, zh, count, zhHits]);
+    // 已应用判定：英文未命中且中文译文已存在（支持增量追加新条目）
+    if (count > 0 && hits !== count && !(hits === 0 && zhHits > 0)) {
+      problems.push(`"${en}" 期望 ${count} 次，实际 ${hits} 次（译文命中 ${zhHits}）`);
     }
   }
 
   console.log('命中报告（实际/期望  原文 → 译文）：');
-  for (const [hits, en, zh, count] of reportRows) {
-    const mark = count === 0 ? '?' : hits === count ? '✓' : '✗';
-    console.log(`  ${mark} ${hits}/${count || '-'}  ${en} → ${zh}`);
+  for (const [hits, en, zh, count, zhHits] of reportRows) {
+    const mark = count === 0 ? '?' : hits === count ? '✓' : hits === 0 && zhHits > 0 ? '↻' : '✗';
+    console.log(`  ${mark} ${hits}/${count || '-'}  ${en} → ${zh}${hits === 0 && zhHits > 0 ? '（已应用）' : ''}`);
   }
   if (report) return;
   if (problems.length) {
     fail(`以下条目命中数与预期不符（bundle 可能已更新，请核对 TABLE）：\n  ${problems.join('\n  ')}`);
   }
 
-  // 应用到所有 bundle
+  // 应用到所有 bundle（英文仍在才替换，天然幂等）
   for (const b of bundles) {
     let code = await readFile(b, 'utf8');
     for (const [count, en, zh] of TABLE) {
