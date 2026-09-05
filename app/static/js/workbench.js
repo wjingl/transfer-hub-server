@@ -126,8 +126,6 @@
     const main = $('reg-main');
     main.textContent = hasActive ? '② 外发完成' : '① 登记并开始外发';
     main.disabled = hasActive ? false : !state.payload;
-    $('reg-fail').disabled = !hasActive;
-    $('reg-cancel').disabled = !hasActive;
   }
 
   function toast(msg, type = 'error') {
@@ -351,16 +349,8 @@
         await registerAndStart();
       }
     });
-    $('reg-fail').addEventListener('click', async () => {
-      stopHubSend();
-      await finalizeRecord('failed');
-      setBar({ recState: '记录已标记失败' });
-    });
-    $('reg-cancel').addEventListener('click', async () => {
-      stopHubSend();
-      await finalizeRecord('stopped');
-      setBar({ recState: '记录已取消' });
-    });
+    // 数据安全考量：不提供手动“标记失败/取消记录”——外发记录一经创建
+    // 只能走向“外发完成”或由内核错误自动置为失败，任何人无法静默撤销。
 
     $('reg-full').addEventListener('click', () => toggleFullscreen().catch((e) => toast(`全屏失败：${e.message}`)));
 
