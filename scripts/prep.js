@@ -47,9 +47,12 @@ for (const f of CIMBAR) {
   if (!fs.existsSync(p)) fail(`cimbar/${f} 缺失（官方运行时必须完整随包）`);
 }
 
-// 3) 离线包必须存在且 >1MB
+// 3) 离线包与 Android APK 必须存在且 >1MB
 const zipOk = fs.existsSync(ZIP) && fs.statSync(ZIP).size > 1024 * 1024;
 if (!zipOk) fail('webapp/transfer-hub-offline.zip 缺失或过小（应由同一 dist 打包）');
+const APK = path.join(ROOT, 'webapp', 'transfer-hub-android.apk');
+const apkOk = fs.existsSync(APK) && fs.statSync(APK).size > 1024 * 1024;
+if (!apkOk) fail('webapp/transfer-hub-android.apk 缺失或过小（放入与 dist 同构建的 Release APK）');
 
 // 4) 刷新清单（provenance）
 const bundle = refs.find((r) => /^assets\/index-.*\.js$/.test(r)) || '';
@@ -59,9 +62,10 @@ const manifest = {
   bundle,
   cimbar: Object.fromEntries(CIMBAR.map((f) => [f, sha256(path.join(DIST, 'cimbar', f)).slice(0, 32)])),
   offlineZipBytes: fs.statSync(ZIP).size,
+  androidApkBytes: fs.statSync(APK).size,
   verifiedAt: new Date().toISOString(),
 };
 fs.writeFileSync(path.join(ROOT, 'webapp', 'VERSION.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
 // eslint-disable-next-line no-console
-console.log(`[prep] ✓ 内核完整：bundle=${bundle}，cimbar×${CIMBAR.length}，离线包 ${manifest.offlineZipBytes} B`);
+console.log(`[prep] ✓ 内核完整：bundle=${bundle}，cimbar×${CIMBAR.length}，离线包 ${manifest.offlineZipBytes} B，APK ${manifest.androidApkBytes} B`);

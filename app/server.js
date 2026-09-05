@@ -33,6 +33,7 @@ const { bootstrapAdmin } = require('./auth');
 const STATIC_DIR = path.join(__dirname, 'static');
 const HUB_DIST = path.join(ROOT, 'webapp', 'dist');
 const HUB_OFFLINE_ZIP = path.join(ROOT, 'webapp', 'transfer-hub-offline.zip');
+const HUB_ANDROID_APK = path.join(ROOT, 'webapp', 'transfer-hub-android.apk');
 
 /* ------------------------------ 响应优化：gzip + 文件缓存 ------------------------------ */
 // /hub 文档为 ~100KB 文本，按 mtime 缓存解析结果并按内容缓存 gzip 结果（有界）。
@@ -351,18 +352,20 @@ function createApp(ctx) {
   app.get('/receiver', (req, res) => {
     res.sendFile(path.join(STATIC_DIR, 'pages', 'receiver.html'));
   });
-  app.get('/receiver/download', (req, res, next) => {
-    fs.stat(HUB_OFFLINE_ZIP, (err, st) => {
-      if (err || !st.isFile()) return next(new HttpError(404, '离线包尚未生成，请运行 npm run prep'));
-      res.setHeader('Content-Type', 'application/zip');
+  const serveDownload = (absPath, filename, contentType, missingMsg) => (req, res, next) => {
+    fs.stat(absPath, (err, st) => {
+      if (err || !st.isFile()) return next(new HttpError(404, missingMsg));
+      res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Length', st.size);
-      res.setHeader('Content-Disposition', 'attachment; filename="TransferHub-offline.zip"');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('X-Content-Type-Options', 'nosniff');
-      const stream = fs.createReadStream(HUB_OFFLINE_ZIP);
-      stream.on('error', () => next(new HttpError(500, '离线包读取失败')));
+      const stream = fs.createReadStream(absPath);
+      stream.on('error', () => next(new HttpError(500, '文件读取失败')));
       stream.pipe(res);
     });
-  });
+  };
+  app.get('/receiver/download', serveDownload(HUB_OFFLINE_ZIP, 'TransferHub-offline.zip', 'application/zip', '离线包尚未生成，请运行 npm run prep'));
+  app.get('/receiver/download-apk', serveDownload(HUB_ANDROID_APK, 'TransferHub-android.apk', 'application/vnd.android.package-archive', 'APK 未就绪，请运行 npm run prep 检查 webapp/'));
 
   // 静态资源：管理端 css/js（短缓存）+ 传输内核（hash 命名，长缓存）
   app.use('/css', express.static(path.join(STATIC_DIR, 'css'), { dotfiles: 'ignore', index: false, maxAge: '5m' }));

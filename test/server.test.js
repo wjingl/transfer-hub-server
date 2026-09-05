@@ -630,6 +630,15 @@ test('离线收发包页面与下载可用', async () => {
   assert.ok(Buffer.isBuffer(r2.body) && r2.body.length > 1024 * 1024);
   assert.match(r2.headers['content-disposition'], /TransferHub-offline\.zip/);
   assert.equal(r2.headers['content-type'], 'application/zip');
+  const r3 = await rq().get('/receiver/download-apk').buffer(true).parse((res, cb) => {
+    const chunks = [];
+    res.on('data', (c) => chunks.push(c));
+    res.on('end', () => cb(null, Buffer.concat(chunks)));
+  });
+  assert.equal(r3.status, 200);
+  assert.ok(Buffer.isBuffer(r3.body) && r3.body.length > 1024 * 1024);
+  assert.match(r3.headers['content-disposition'], /TransferHub-android\.apk/);
+  assert.equal(r3.headers['content-type'], 'application/vnd.android.package-archive');
 });
 
 test('传输内核原样分发：/app 为工作台、/hub 文档需登录、官方运行时完整', async () => {

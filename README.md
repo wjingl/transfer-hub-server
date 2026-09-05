@@ -7,7 +7,7 @@
 - 适配 **Linux x86 服务器**（无外网环境可离线部署），默认端口 **1145**
 - 管理端：Express 5 + better-sqlite3(WAL) + helmet + 会话/限流/CSRF/验证码/锁定
 - 统计图形化：每日趋势、目的地环形图、每人条形图（零依赖本地 SVG）
-- 离线收发包：`/receiver` 下载与服务器内核同一构建的离线 zip，供扫描设备本机打开（摄像头需 HTTPS 或 localhost）
+- 离线分发：`/receiver` 提供与服务器内核同一构建的电脑离线包（zip）与 Android 应用（APK）；跨设备摄像头接收用离线包本机打开（摄像头需 HTTPS 或 localhost）
 
 ---
 
@@ -30,7 +30,7 @@
 | `app/server.js` | Express 5 入口：helmet/CSP 分级、会话、限流、CSRF、优雅停机；`/hub` 静态托管传输内核、`/app` 工作台、`/receiver` 离线包 |
 | `app/static/pages/workbench.html` + `app/static/js/workbench.js` | 外发工作台：父页面登记条（目的地/备注）+ 同源 iframe 内嵌内核；读取内核内用户选择的载荷元数据 → 创建记录 → 联动「开始发送/停止」走完记录状态机；未登记直接发送会收到提醒（不阻断） |
 | `webapp/dist` | 传输内核（TransferHub 构建产物，字节原样；`scripts/prep.js` 校验完整性并生成 `webapp/VERSION.json` 清单） |
-| `webapp/transfer-hub-offline.zip` | 离线收发包（与 `/hub` 同一构建，含 Windows/Linux 启动器） |
+| `webapp/transfer-hub-offline.zip` / `webapp/transfer-hub-android.apk` | 离线收发包与 Android 应用（与 `/hub` 同一构建，均从 `/receiver` 页下载） |
 | `app/db.js` / `app/auth.js` / `app/users.js` / `app/records.js` / `app/backup.js` | SQLite(WAL) 参数化查询、注册-审批-登录（锁定+验证码）、用户管理、外发记录与统计、内容备份（保留期清理） |
 | `app/static/js/charts.js` | 零依赖 SVG 图表（暗色主题） |
 | `scripts/cli.js` | 离线维护（建号/重置/备份/导出/统计） |
@@ -121,4 +121,4 @@ sudo ./deploy/deploy.sh            # systemd 加固服务 + 开机自启 + 健�
 
 ## 七、升级传输内核
 
-用新版 TransferHub 构建产物整体替换 `webapp/dist/`，并重新打包 `webapp/transfer-hub-offline.zip`，然后执行 `npm run prep` 校验（哈希清单会同步刷新）。不要手工修改 `webapp/dist` 内任何文件。
+用新版 TransferHub 构建产物整体替换 `webapp/dist/`，重新打包 `webapp/transfer-hub-offline.zip`，并放入同构建的 `webapp/transfer-hub-android.apk`，然后执行 `npm run prep` 校验（哈希清单会同步刷新，APK 缺失将无法通过打包）。不要手工修改 `webapp/dist` 内任何文件。
