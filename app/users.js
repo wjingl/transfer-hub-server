@@ -119,19 +119,20 @@ function createUsersApi(ctx) {
     const admin = getAdmin(req);
     if (user.id === admin.id) throw httpError(400, '不能重置自己的密码');
 
-    const newPw = cryptoRandomPassword();
+    // 重置为简洁好记的默认密码（可用 config.password.resetDefault 覆盖），下次登录强制改密
+    const newPw = (config.password && config.password.resetDefault) || 'Transfer@1145';
     const passHash = await auth.hashPassword(newPw);
     db.setUserPassword(id, passHash, 1);
     db.audit({
       userId: admin.id,
       username: admin.username,
       action: 'USER_RESET_PASSWORD',
-      detail: `为 ${user.username} 重置密码（下次登录强制改密）`,
+      detail: `为 ${user.username} 重置密码为默认密码（下次登录强制改密）`,
       ip: clientIP(req),
     });
     // 销毁该用户所有会话，强制其重新登录
     db.destroyUserSessions(id);
-    res.json({ ok: true, message: '密码已重置', temporaryPassword: newPw });
+    res.json({ ok: true, message: '密码已重置为默认密码', temporaryPassword: newPw, isDefault: true });
   }
 
   /* ------------------------------ 停用/启用/归档 ------------------------------ */

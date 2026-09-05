@@ -340,7 +340,8 @@ test('总管理重置密码 → 临时密码登录 → 强制改密 → 新密�
       .set('X-CSRF-Token', admin.csrf).send({});
     assert.equal(res.status, 200);
     const tmp = res.body.temporaryPassword;
-    assert.equal(tmp.length, 12);
+    assert.equal(tmp, 'Transfer@1145'); // 重置为简洁好记的默认密码
+    assert.equal(res.body.isDefault, true);
 
     const login = await c.rq.post('/api/auth/login').send({ username: 'alice', password: tmp });
     assert.equal(login.body.mustChangePassword, true);

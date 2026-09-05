@@ -19,7 +19,8 @@
   },
   "password": {
     "minLength": 8,
-    "maxLength": 64
+    "maxLength": 64,
+    "resetDefault": "Transfer@1145"
   },
   "registration": {
     "enabled": true
@@ -36,7 +37,12 @@
       "forcePasswordChange": true
     }
   },
-  "destinations": ["jzw", "bgw", "my", "sjw"],
+  "destinations": [
+    "jzw",
+    "bgw",
+    "my",
+    "sjw"
+  ],
   "limits": {
     "jsonBody": 102400,
     "batchBody": 1048576,

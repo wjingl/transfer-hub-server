@@ -98,9 +98,15 @@ const App = (() => {
       <div class="spacer"></div>
       <div class="user">${escapeHtml(u.display_name || u.username)}${u.role === 'admin' ? ' · 总管理' : ''}</div>
       ${u.role === 'admin' ? '<a class="pwd-link" href="/account">改密</a>' : ''}
-      <button class="logout" onclick="App.logout()">退出</button>
+      <button class="logout" type="button">退出</button>
     `;
   }
+
+  // CSP 禁止内联事件处理器，退出按钮用事件委托绑定（对重绘后的 DOM 依然生效）
+  document.addEventListener('click', (event) => {
+    const btn = event.target && event.target.closest ? event.target.closest('.logout') : null;
+    if (btn) { event.preventDefault(); logout(); }
+  });
 
   async function logout() {
     try { await api('/api/auth/logout', { method: 'POST' }); } catch (_) { /* 忽略 */ }
