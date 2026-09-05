@@ -13,7 +13,8 @@
     "test": "node --test \"test/*.test.js\"",
     "prep": "node scripts/prep.js",
     "package": "npm run build:receiver && bash scripts/build_package.sh",
-    "build:receiver": "node scripts/build-receiver-variant.mjs && python scripts/build-receiver-apk.py"
+    "build:receiver": "npm run localize && node scripts/build-receiver-variant.mjs && python scripts/build-receiver-apk.py",
+    "localize": "node scripts/localize-webapp.mjs"
   },
   "dependencies": {
     "@depup/svg-captcha": "1.4.0-depup.0",

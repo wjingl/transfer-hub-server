@@ -122,4 +122,4 @@ sudo ./deploy/deploy.sh            # systemd 加固服务 + 开机自启 + 健�
 
 ## 七、升级传输内核
 
-用新版 TransferHub 构建产物整体替换 `webapp/dist/`，并放入同构建的完整版 APK（`webapp/transfer-hub-android.apk`，作为仅接收 APK 的重打包底稿），然后 `npm run build:receiver` 重新生成仅接收分发物、`npm run prep` 校验（清单自动刷新）。不要手工修改 `webapp/dist` 内任何文件；接收守卫只存在于衍生副本 `webapp/receiver-only/`。
+用新版 TransferHub 构建产物整体替换 `webapp/dist/`，**随后必须执行 `npm run localize` 做全盘中文化**（精确字符串变换，替换表见 scripts/localize-webapp.mjs；bundle 更新后命中数不符会报错阻止），并放入同构建的完整版 APK（`webapp/transfer-hub-android.apk`，作为仅接收 APK 的重打包底稿），然后 `npm run build:receiver` 重新生成仅接收分发物、`npm run prep` 校验（清单自动刷新）。不要手工修改 `webapp/dist` 内任何文件；接收守卫只存在于衍生副本 `webapp/receiver-only/`。

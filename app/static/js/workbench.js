@@ -217,7 +217,7 @@
 
   function tryStopNow() {
     if (!state.pendingStop || !hubReady()) return;
-    const stopBtn = findButton(['停止', 'Stop']); // Cimbar 页「停止」/ RaptorQR 页「Stop」
+    const stopBtn = findButton(['停止', 'Stop']); // 各页停止按钮（已本地化为「停止」）
     if (stopBtn) {
       stopBtn.click();
       state.pendingStop = false;
@@ -229,7 +229,7 @@
     if (!hubReady()) return;
     for (const b of hubButtons()) {
       const t = (b.textContent || '').trim();
-      if (t === '开始发送' || t === 'Start Live QR' || t === '停止' || t === 'Stop') {
+      if (t === '开始发送' || t === '开始实况二维码' || t === 'Start Live QR' || t === '停止' || t === 'Stop') {
         b.style.display = 'none';
       }
     }
@@ -316,7 +316,7 @@
     setBar({ recState: `记录 #${record.id} 外发中…` });
 
     // 联动内核开始发送（Cimbar 页「开始发送」/ RaptorQR 页「Start Live QR」）
-    const startBtn = findButton(['开始发送', 'Start Live QR']);
+    const startBtn = findButton(['开始发送', '开始实况二维码', 'Start Live QR']);
     if (startBtn) {
       startBtn.click();
     } else {

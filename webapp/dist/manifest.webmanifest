@@ -1,7 +1,7 @@
 {
-  "name": "RaptorQR",
-  "short_name": "RaptorQR",
-  "description": "High-speed offline file and text transfer over animated QR codes.",
+  "name": "传输中枢",
+  "short_name": "传输中枢",
+  "description": "基于动态二维码的高速离线文件与文本传输。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -662,6 +662,9 @@ test('传输内核原样分发：/app 为工作台、/hub 文档需登录、官�
     assert.ok(bundle, 'hub index 应引用 assets bundle');
     const asset = await c.rq.get(`/hub/assets/${bundle}`).set('Cookie', admin.cookie);
     assert.equal(asset.status, 200);
+    // 服务器版内核必须已本地化为中文（localize-webapp）
+    assert.ok(asset.text.includes('开始实况二维码'), 'bundle 应包含中文界面文案');
+    assert.ok(!asset.text.includes('Start Live QR'), 'bundle 不应残留英文按钮');
     // 官方 Cimbar 运行时五件套必须随包存在
     for (const f of ['cimbar_js.2026-08-21T2336.js', 'cimbar_js.2026-08-21T2336.wasm', 'send.2026-08-21T2336.js', 'send-worker.2026-08-21T2336.js', 'recv-worker.2026-08-21T2336.js', 'recv.2026-08-21T2336.js', 'zstd.2026-08-21T2336.js']) {
       const r = await c.rq.get(`/hub/cimbar/${f}`).set('Cookie', admin.cookie);
